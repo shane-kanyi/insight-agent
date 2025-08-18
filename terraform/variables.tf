@@ -14,3 +14,9 @@ variable "service_name" {
   type        = string
   default     = "insight-agent"
 }
+
+variable "github_repo" {
+  description = "The GitHub repository in the format 'owner/repo_name'."
+  type        = string
+  # Example: "my-github-username/insight-agent"
+}
