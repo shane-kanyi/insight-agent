@@ -39,7 +39,7 @@ jobs:
         docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/insight-agent-repo/insight-agent:${{ github.sha }}
 
   deploy:
-    name: Deploy to Cloud Run
+    name: Deploy new image to Cloud Run
     needs: build-and-push
     runs-on: ubuntu-latest
     permissions:
@@ -47,7 +47,7 @@ jobs:
       id-token: 'write'
 
     steps:
-    - name: Checkout code
+    - name: Checkout code # Although we don't use the code here, it's a good practice to have it
       uses: actions/checkout@v3
 
     - name: Authenticate to Google Cloud
@@ -56,16 +56,14 @@ jobs:
         workload_identity_provider: '${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}'
         service_account: '${{ secrets.GCP_SA_EMAIL }}'
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        terraform_version: 1.2.0
+    # This is the NEW part. We are no longer using Terraform here.
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v1'
 
-    - name: Terraform Init
-      run: terraform -chdir=terraform init
-
-    - name: Terraform Apply
+    - name: Deploy to Cloud Run
       run: |
-        terraform -chdir=terraform apply -auto-approve \
-          -var="gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
-          -var-file=<(echo "image_tag=${{ github.sha }}")
+        gcloud run deploy insight-agent \
+          --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/insight-agent-repo/insight-agent:${{ github.sha }} \
+          --region us-central1 \
+          --project ${{ secrets.GCP_PROJECT_ID }} \
+          --quiet
